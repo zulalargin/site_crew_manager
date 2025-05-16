@@ -14,7 +14,6 @@ class _SiteListScreenState extends State<SiteListScreen> {
   late Future<List<SiteModel>> _futureSites;
   late Future<List<PersonnelModel>> _futurePersonnel;
   String searchTerm = '';
-  Map<int, SiteModel?> selectedAssignments = {};
 
   @override
   void initState() {
@@ -78,37 +77,55 @@ class _SiteListScreenState extends State<SiteListScreen> {
                             itemCount: filteredPersonnel.length,
                             itemBuilder: (context, index) {
                               final person = filteredPersonnel[index];
-                              final assignedSite = sites.firstWhere(
-                                    (s) => s.id == person.siteId,
-                                orElse: () => SiteModel(id: -1, name: 'Assign', location: '', workerCount: 0, engineerCount: 0),
-                              );
+
+                              SiteModel? assignedSite;
+                              try {
+                                assignedSite = sites.firstWhere((s) => s.id == person.siteId);
+                              } catch (_) {
+                                assignedSite = null;
+                              }
+
                               return ListTile(
                                 title: Text(person.name, style: const TextStyle(fontSize: 14)),
                                 trailing: SizedBox(
-                                  width: 120,
-                                  child: DropdownButton<SiteModel>(
+                                  width: 140,
+                                  child: DropdownButton<SiteModel?>(
                                     isExpanded: true,
-                                    value: sites.any((s) => s.id == person.siteId) ? assignedSite : null,
+                                    value: assignedSite,
                                     hint: const Text('Assign', style: TextStyle(fontSize: 13)),
-                                    items: sites.map((site) {
-                                      return DropdownMenuItem(
-                                        value: site,
-                                        child: Text(site.name, style: const TextStyle(fontSize: 13)),
-                                      );
-                                    }).toList(),
+                                    items: [
+                                      const DropdownMenuItem<SiteModel?>(
+                                        value: null,
+                                        child: Text('Boşta', style: TextStyle(fontSize: 13)),
+                                      ),
+                                      ...sites.map((site) {
+                                        return DropdownMenuItem<SiteModel?>(
+                                          value: site,
+                                          child: Text(site.name, style: const TextStyle(fontSize: 13)),
+                                        );
+                                      }).toList(),
+                                    ],
                                     onChanged: (selectedSite) async {
-                                      if (selectedSite != null) {
-                                        await PersonnelService.assignSite(person.id, selectedSite.id);
+                                      final newSiteId = selectedSite?.id;
+
+                                      final success = await PersonnelService.assignSite(person.id, newSiteId);
+                                      if (success) {
                                         setState(() {
-                                          filteredPersonnel[index] = PersonnelModel(
-                                            id: person.id,
-                                            name: person.name,
-                                            role: person.role,
-                                            siteId: selectedSite.id,
-                                          );
+                                          _futureSites = SiteService.fetchSites();
+                                          _futurePersonnel = PersonnelService.fetchAllPersonnel();
                                         });
+
+
                                         ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text('${person.name} assigned to ${selectedSite.name}')),
+                                          SnackBar(
+                                            content: Text(
+                                              '${person.name} ${selectedSite == null ? 'boşta' : '${selectedSite.name}'} olarak güncellendi',
+                                            ),
+                                          ),
+                                        );
+                                      } else {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('Güncelleme başarısız')),
                                         );
                                       }
                                     },
@@ -132,6 +149,8 @@ class _SiteListScreenState extends State<SiteListScreen> {
                       itemBuilder: (context, index) {
                         final site = sites[index];
                         final assignedPersonnel = personnelList.where((p) => p.siteId == site.id).toList();
+                        final roleCounts = PersonnelService.countByRole(assignedPersonnel);
+
                         return Card(
                           margin: const EdgeInsets.all(8),
                           child: ListTile(
@@ -140,23 +159,28 @@ class _SiteListScreenState extends State<SiteListScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text('📍 ${site.location}'),
-                                Text('👷 Workers: ${site.workerCount}'),
-                                Text('🧑‍💼 Engineers: ${site.engineerCount}'),
+                                const SizedBox(height: 4),
+                                ...roleCounts.entries.map((entry) => Text('🔹 ${entry.key}: ${entry.value}')),
                               ],
                             ),
-                            onTap: () {
-                              Navigator.push(
+                            onTap: () async {
+                              await Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => SiteDetailScreen(siteId: site.id),
                                 ),
                               );
+                              // Detaydan dönünce yenile
+                              setState(() {
+                                _futureSites = SiteService.fetchSites();
+                                _futurePersonnel = PersonnelService.fetchAllPersonnel();
+                              });
                             },
                           ),
                         );
                       },
                     ),
-                  )
+                  ),
                 ],
               );
             },

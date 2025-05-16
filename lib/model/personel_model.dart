@@ -2,7 +2,7 @@ class PersonnelModel {
   final int id;
   final String name;
   final String role;
-  final int siteId;
+  final int? siteId;
 
   PersonnelModel({
     required this.id,

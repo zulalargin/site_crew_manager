@@ -17,13 +17,20 @@ class PersonnelService {
     }
   }
 
-  static Future<void> assignSite(int personId, int siteId) async {
-    final url = Uri.parse('$baseUrl/$personId/assign/$siteId');
-    final response = await http.put(url);
-    if (response.statusCode != 200) {
-      throw Exception("Failed to assign site");
-    }
+  static Future<bool> assignSite(int personId, int? siteId) async {
+    final response = await http.put(
+      Uri.parse('http://localhost:8080/api/personnel/$personId/assign'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'siteId': siteId}),
+    );
+
+    print("Status Code: ${response.statusCode}");
+    print("Response Body: ${response.body}");
+
+    return response.statusCode == 200;
   }
+
+
 
   static Future<List<PersonnelModel>> fetchPersonnelBySite(int siteId) async {
     final response = await http.get(Uri.parse('http://localhost:8080/api/personnel/by-site/$siteId'));
@@ -35,16 +42,26 @@ class PersonnelService {
       throw Exception('Failed to load personnel');
     }
   }
-  static Future<bool> updatePersonnelSite(int personId, int newSiteId) async {
+  static Future<bool> updatePersonnelSite(int personId, int? siteId) async {
     final response = await http.put(
-      Uri.parse('http://localhost:8080/api/personnel/$personId/assign/$newSiteId'),
+      Uri.parse('http://localhost:8080/api/personnel/$personId/assign'), // doğru URL mi?
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'siteId': siteId}),
     );
 
-    if (response.statusCode == 200) {
-      return true;
-    } else {
-      print('Error updating site: ${response.statusCode}');
-      return false;
+    print("🟡 Status Code: ${response.statusCode}");
+    print("🟡 Response Body: ${response.body}");
+
+    return response.statusCode == 200;
+  }
+
+
+
+  static Map<String, int> countByRole(List<PersonnelModel> personnelList) {
+    final Map<String, int> roleCounts = {};
+    for (var person in personnelList) {
+      roleCounts[person.role] = (roleCounts[person.role] ?? 0) + 1;
     }
+    return roleCounts;
   }
 }

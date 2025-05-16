@@ -47,8 +47,6 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
                 Text('🏗 ${currentSite.name}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                 Text('📍 ${currentSite.location}', style: const TextStyle(fontSize: 16)),
                 const SizedBox(height: 12),
-                Text('👷 Workers: ${currentSite.workerCount}   🧑‍💼 Engineers: ${currentSite.engineerCount}', style: const TextStyle(fontSize: 16)),
-                const SizedBox(height: 24),
 
                 Expanded(
                   child: FutureBuilder<List<PersonnelModel>>(
@@ -63,62 +61,76 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
                       }
 
                       final personnel = personnelSnapshot.data!;
+                      final roleCounts = PersonnelService.countByRole(personnel);
 
-                      return FutureBuilder<List<SiteModel>>(
-                        future: SiteService.fetchSites(),
-                        builder: (context, allSitesSnapshot) {
-                          if (allSitesSnapshot.connectionState == ConnectionState.waiting) {
-                            return const Center(child: CircularProgressIndicator());
-                          } else if (allSitesSnapshot.hasError || !allSitesSnapshot.hasData) {
-                            return const Text("Error loading sites");
-                          }
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ...roleCounts.entries.map((e) => Text(
+                            '${e.key}: ${e.value}',
+                            style: const TextStyle(fontSize: 16),
+                          )),
+                          const SizedBox(height: 16),
 
-                          final otherSites = allSitesSnapshot.data!
-                              .where((s) => s.id != currentSite.id)
-                              .toList();
+                          Expanded(
+                            child: FutureBuilder<List<SiteModel>>(
+                              future: SiteService.fetchSites(),
+                              builder: (context, allSitesSnapshot) {
+                                if (allSitesSnapshot.connectionState == ConnectionState.waiting) {
+                                  return const Center(child: CircularProgressIndicator());
+                                } else if (allSitesSnapshot.hasError || !allSitesSnapshot.hasData) {
+                                  return const Text("Error loading sites");
+                                }
 
-                          return ListView.builder(
-                            itemCount: personnel.length,
-                            itemBuilder: (context, index) {
-                              final p = personnel[index];
+                                final otherSites = allSitesSnapshot.data!
+                                    .where((s) => s.id != currentSite.id)
+                                    .toList();
 
-                              return ListTile(
-                                leading: Text(p.role == 'Worker' ? '👷' : '🧑‍💼'),
-                                title: Text(p.name),
-                                subtitle: Text(p.role),
-                                trailing: SizedBox(
-                                  width: 130,
-                                  child: DropdownButton<SiteModel>(
-                                    isExpanded: true,
-                                    hint: const Text("Move"),
-                                    value: null,
-                                    items: otherSites.map((s) {
-                                      return DropdownMenuItem(
-                                        value: s,
-                                        child: Text(s.name),
-                                      );
-                                    }).toList(),
-                                    onChanged: (newSite) async {
-                                      final success = await PersonnelService.updatePersonnelSite(p.id, newSite!.id);
-                                      if (success) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text('${p.name} moved to ${newSite.name}')),
-                                        );
-                                        setState(() {
-                                          siteFuture = SiteService.fetchSiteById(widget.siteId);
-                                        });
-                                      } else {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(content: Text('Update failed')),
-                                        );
-                                      }
-                                    },
-                                  ),
-                                ),
-                              );
-                            },
-                          );
-                        },
+                                return ListView.builder(
+                                  itemCount: personnel.length,
+                                  itemBuilder: (context, index) {
+                                    final p = personnel[index];
+
+                                    return ListTile(
+                                      leading: Text(p.role == 'Worker' ? '👷' : '🧑‍💼'),
+                                      title: Text(p.name),
+                                      subtitle: Text(p.role),
+                                      trailing: SizedBox(
+                                        width: 130,
+                                        child: DropdownButton<SiteModel>(
+                                          isExpanded: true,
+                                          hint: const Text("Move"),
+                                          value: null,
+                                          items: otherSites.map((s) {
+                                            return DropdownMenuItem(
+                                              value: s,
+                                              child: Text(s.name),
+                                            );
+                                          }).toList(),
+                                          onChanged: (newSite) async {
+                                            final success = await PersonnelService.updatePersonnelSite(p.id, newSite!.id);
+                                            if (success) {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(content: Text('${p.name} moved to ${newSite.name}')),
+                                              );
+                                              setState(() {
+                                                siteFuture = SiteService.fetchSiteById(widget.siteId);
+                                              });
+                                            } else {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                const SnackBar(content: Text('Update failed')),
+                                              );
+                                            }
+                                          },
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+                          ),
+                        ],
                       );
                     },
                   ),
