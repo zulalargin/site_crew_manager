@@ -85,8 +85,16 @@ class _SiteListScreenState extends State<SiteListScreen> {
                                 assignedSite = null;
                               }
 
-                              return ListTile(
-                                title: Text(person.name, style: const TextStyle(fontSize: 14)),
+                               return ListTile(
+                                tileColor: person.siteId == null ? Colors.green.withOpacity(0.15) : null,
+                                title: Text(
+                                  person.name,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: person.siteId == null ? Colors.green[800] : Colors.black,
+                                    fontWeight: person.siteId == null ? FontWeight.bold : FontWeight.normal,
+                                  ),
+                                ),
                                 trailing: SizedBox(
                                   width: 140,
                                   child: DropdownButton<SiteModel?>(
@@ -107,20 +115,15 @@ class _SiteListScreenState extends State<SiteListScreen> {
                                     ],
                                     onChanged: (selectedSite) async {
                                       final newSiteId = selectedSite?.id;
-
                                       final success = await PersonnelService.assignSite(person.id, newSiteId);
                                       if (success) {
                                         setState(() {
                                           _futureSites = SiteService.fetchSites();
                                           _futurePersonnel = PersonnelService.fetchAllPersonnel();
                                         });
-
-
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           SnackBar(
-                                            content: Text(
-                                              '${person.name} ${selectedSite == null ? 'boşta' : '${selectedSite.name}'} olarak güncellendi',
-                                            ),
+                                            content: Text('${person.name} ${selectedSite == null ? 'boşta' : '${selectedSite.name}'} olarak güncellendi'),
                                           ),
                                         );
                                       } else {
@@ -132,6 +135,7 @@ class _SiteListScreenState extends State<SiteListScreen> {
                                   ),
                                 ),
                               );
+
                             },
                           ),
                         ),
