@@ -170,61 +170,88 @@ class _SiteListScreenState extends State<SiteListScreen> {
                                         person.name,
                                         style: TextStyle(fontSize: 14, color: textColor, fontWeight: fontWeight),
                                       ),
-                                      trailing: SizedBox(
-                                        width: 140,
-                                        child: DropdownButtonHideUnderline(
-                                          child: DropdownButton<SiteModel?>(
-                                            isExpanded: true,
-                                            value: isOnLeave ? SiteModel.leave : (assignedSite.id < 0 ? null : assignedSite),
-                                            hint: const Text('Assign', style: TextStyle(fontSize: 13)),
-                                            iconEnabledColor: Colors.black,
-                                            dropdownColor: Colors.white,
-                                            style: const TextStyle(fontSize: 13, color: Colors.black),
-                                            items: [
-                                              DropdownMenuItem<SiteModel?>(value: null, child: _noHighlightText('Boşta')),
-                                              DropdownMenuItem<SiteModel?>(value: SiteModel.leave, child: _noHighlightText('İzinde')),
-                                              ...sites.map((site) => DropdownMenuItem<SiteModel?>(
-                                                value: site,
-                                                child: _noHighlightText(site.name),
-                                              )),
-                                            ],
-                                            onChanged: (selectedSite) async {
-                                              String? newStatus;
-                                              int? newSiteId;
-
-                                              if (selectedSite == null) {
-                                                newSiteId = null;
-                                                newStatus = 'ACTIVE';
-                                              } else if (selectedSite.id == -1) {
-                                                newSiteId = null;
-                                                newStatus = 'ON_LEAVE';
-                                              } else {
-                                                newSiteId = selectedSite.id;
-                                                newStatus = 'ACTIVE';
-                                              }
-
-                                              final success = await PersonnelService.assignSiteAndStatus(
-                                                person.id,
-                                                newSiteId,
-                                                newStatus,
+                                      trailing: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          IconButton(
+                                            icon: Icon(Icons.close, color: Colors.red),
+                                            onPressed: () async {
+                                              final confirmed = await showDialog(
+                                                context: context,
+                                                builder: (_) => AlertDialog(
+                                                  title: const Text('Silme Onayı'),
+                                                  content: Text('${person.name} silinsin mi?'),
+                                                  actions: [
+                                                    TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('İptal')),
+                                                    ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Sil')),
+                                                  ],
+                                                ),
                                               );
-
-                                              if (success) {
+                                              if (confirmed == true) {
+                                                await PersonnelService.deletePersonnel(person.id);
                                                 setState(() {
-                                                  _futureSites = SiteService.fetchSites();
                                                   _futurePersonnel = PersonnelService.fetchAllPersonnel();
                                                 });
-                                                ScaffoldMessenger.of(context).showSnackBar(
-                                                  SnackBar(content: Text('${person.name} güncellendi')),
-                                                );
-                                              } else {
-                                                ScaffoldMessenger.of(context).showSnackBar(
-                                                  const SnackBar(content: Text('Güncelleme başarısız')),
-                                                );
                                               }
                                             },
                                           ),
-                                        ),
+                                          SizedBox(
+                                            width: 140,
+                                            child: DropdownButtonHideUnderline(
+                                              child: DropdownButton<SiteModel?>(
+                                                isExpanded: true,
+                                                value: isOnLeave ? SiteModel.leave : (assignedSite.id < 0 ? null : assignedSite),
+                                                hint: const Text('Assign', style: TextStyle(fontSize: 13)),
+                                                iconEnabledColor: Colors.black,
+                                                dropdownColor: Colors.white,
+                                                style: const TextStyle(fontSize: 13, color: Colors.black),
+                                                items: [
+                                                  DropdownMenuItem<SiteModel?>(value: null, child: _noHighlightText('Boşta')),
+                                                  DropdownMenuItem<SiteModel?>(value: SiteModel.leave, child: _noHighlightText('İzinde')),
+                                                  ...sites.map((site) => DropdownMenuItem<SiteModel?>(
+                                                    value: site,
+                                                    child: _noHighlightText(site.name),
+                                                  )),
+                                                ],
+                                                onChanged: (selectedSite) async {
+                                                  String? newStatus;
+                                                  int? newSiteId;
+
+                                                  if (selectedSite == null) {
+                                                    newSiteId = null;
+                                                    newStatus = 'ACTIVE';
+                                                  } else if (selectedSite.id == -1) {
+                                                    newSiteId = null;
+                                                    newStatus = 'ON_LEAVE';
+                                                  } else {
+                                                    newSiteId = selectedSite.id;
+                                                    newStatus = 'ACTIVE';
+                                                  }
+
+                                                  final success = await PersonnelService.assignSiteAndStatus(
+                                                    person.id,
+                                                    newSiteId,
+                                                    newStatus,
+                                                  );
+
+                                                  if (success) {
+                                                    setState(() {
+                                                      _futureSites = SiteService.fetchSites();
+                                                      _futurePersonnel = PersonnelService.fetchAllPersonnel();
+                                                    });
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      SnackBar(content: Text('${person.name} güncellendi')),
+                                                    );
+                                                  } else {
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      const SnackBar(content: Text('Güncelleme başarısız')),
+                                                    );
+                                                  }
+                                                },
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     );
                                   },
@@ -268,6 +295,28 @@ class _SiteListScreenState extends State<SiteListScreen> {
                                       return ListTile(
                                         title: Text(site.name),
                                         subtitle: Text('👥 $count personnel'),
+                                        trailing: IconButton(
+                                          icon: const Icon(Icons.close, color: Colors.red),
+                                          onPressed: () async {
+                                            final confirmed = await showDialog(
+                                              context: context,
+                                              builder: (_) => AlertDialog(
+                                                title: const Text('Silme Onayı'),
+                                                content: Text('${site.name} silinsin mi?'),
+                                                actions: [
+                                                  TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('İptal')),
+                                                  ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Sil')),
+                                                ],
+                                              ),
+                                            );
+                                            if (confirmed == true) {
+                                              await SiteService.deleteSite(site.id);
+                                              setState(() {
+                                                _futureSites = SiteService.fetchSites();
+                                              });
+                                            }
+                                          },
+                                        ),
                                         onTap: () async {
                                           await Navigator.push(
                                             context,
@@ -359,6 +408,7 @@ class _SiteListScreenState extends State<SiteListScreen> {
       ),
     );
   }
+
 
   void _showAddPersonnelDialog() {
     final nameController = TextEditingController();

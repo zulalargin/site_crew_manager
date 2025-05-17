@@ -40,6 +40,12 @@ class SiteService {
 
     return response.statusCode == 200 || response.statusCode == 201;
   }
+  static Future<bool> deleteSite(int id) async {
+    final response = await http.delete(
+      Uri.parse('http://localhost:8080/api/sites/$id'),
+    );
+    return response.statusCode == 200;
+  }
 
 
 }
