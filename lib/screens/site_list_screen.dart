@@ -174,84 +174,68 @@ class _SiteListScreenState extends State<SiteListScreen> {
                                       ),
                                       trailing: SizedBox(
                                         width: 140,
-                                        child: DropdownButton<SiteModel?>(
-                                          isExpanded: true,
-                                          value: isOnLeave
-                                              ? SiteModel.leave
-                                              : (assignedSite.id < 0
-                                                  ? null
-                                                  : assignedSite),
-                                          hint: const Text('Assign',
-                                              style: TextStyle(fontSize: 13)),
-                                          items: [
-                                            const DropdownMenuItem<SiteModel?>(
-                                              value: null,
-                                              child: Text('Boşta',
-                                                  style:
-                                                      TextStyle(fontSize: 13)),
-                                            ),
-                                            DropdownMenuItem<SiteModel?>(
-                                              value: SiteModel.leave,
-                                              child: const Text('İzinde',
-                                                  style:
-                                                      TextStyle(fontSize: 13)),
-                                            ),
-                                            ...sites.map((site) {
-                                              return DropdownMenuItem<
-                                                  SiteModel?>(
-                                                value: site,
-                                                child: Text(site.name,
-                                                    style: const TextStyle(
-                                                        fontSize: 13)),
-                                              );
-                                            }).toList(),
-                                          ],
-                                          onChanged: (selectedSite) async {
-                                            String? newStatus;
-                                            int? newSiteId;
+                                        child: DropdownButtonHideUnderline(
+                                          child: DropdownButton<SiteModel?>(
+                                            isExpanded: true,
+                                            value: isOnLeave
+                                                ? SiteModel.leave
+                                                : (assignedSite.id < 0 ? null : assignedSite),
+                                            hint: const Text('Assign', style: TextStyle(fontSize: 13)),
+                                            iconEnabledColor: Colors.black,
+                                            dropdownColor: Colors.white,
+                                            style: const TextStyle(fontSize: 13, color: Colors.black),
+                                            items: [
+                                              DropdownMenuItem<SiteModel?>(
+                                                value: null,
+                                                child: _noHighlightText('Boşta'),
+                                              ),
+                                              DropdownMenuItem<SiteModel?>(
+                                                value: SiteModel.leave,
+                                                child: _noHighlightText('İzinde'),
+                                              ),
+                                              ...sites.map((site) {
+                                                return DropdownMenuItem<SiteModel?>(
+                                                  value: site,
+                                                  child: _noHighlightText(site.name),
+                                                );
+                                              }).toList(),
+                                            ],
+                                            onChanged: (selectedSite) async {
+                                              String? newStatus;
+                                              int? newSiteId;
 
-                                            if (selectedSite == null) {
-                                              newSiteId = null;
-                                              newStatus = 'ACTIVE';
-                                            } else if (selectedSite.id == -1) {
-                                              newSiteId = null;
-                                              newStatus = 'ON_LEAVE';
-                                            } else {
-                                              newSiteId = selectedSite.id;
-                                              newStatus = 'ACTIVE';
-                                            }
+                                              if (selectedSite == null) {
+                                                newSiteId = null;
+                                                newStatus = 'ACTIVE';
+                                              } else if (selectedSite.id == -1) {
+                                                newSiteId = null;
+                                                newStatus = 'ON_LEAVE';
+                                              } else {
+                                                newSiteId = selectedSite.id;
+                                                newStatus = 'ACTIVE';
+                                              }
 
-                                            final success =
-                                                await PersonnelService
-                                                    .assignSiteAndStatus(
-                                              person.id,
-                                              newSiteId,
-                                              newStatus,
-                                            );
+                                              final success = await PersonnelService.assignSiteAndStatus(
+                                                person.id,
+                                                newSiteId,
+                                                newStatus,
+                                              );
 
-                                            if (success) {
-                                              setState(() {
-                                                _futureSites =
-                                                    SiteService.fetchSites();
-                                                _futurePersonnel =
-                                                    PersonnelService
-                                                        .fetchAllPersonnel();
-                                              });
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(
-                                                SnackBar(
-                                                    content: Text(
-                                                        '${person.name} güncellendi')),
-                                              );
-                                            } else {
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(
-                                                const SnackBar(
-                                                    content: Text(
-                                                        'Güncelleme başarısız')),
-                                              );
-                                            }
-                                          },
+                                              if (success) {
+                                                setState(() {
+                                                  _futureSites = SiteService.fetchSites();
+                                                  _futurePersonnel = PersonnelService.fetchAllPersonnel();
+                                                });
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(content: Text('${person.name} güncellendi')),
+                                                );
+                                              } else {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  const SnackBar(content: Text('Güncelleme başarısız')),
+                                                );
+                                              }
+                                            },
+                                          ),
                                         ),
                                       ),
                                     );
@@ -345,7 +329,17 @@ class _SiteListScreenState extends State<SiteListScreen> {
         },
       ),
     );
+  }Widget _noHighlightText(String text) {
+    return Theme(
+      data: Theme.of(context).copyWith(
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        hoverColor: Colors.transparent,
+      ),
+      child: Text(text, style: const TextStyle(fontSize: 13)),
+    );
   }
+
 }
 
 class StatCard extends StatelessWidget {

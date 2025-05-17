@@ -16,6 +16,14 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.blue,
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        hoverColor: Colors.transparent,
+        focusColor: Colors.transparent,
+        canvasColor: Colors.white, // dropdown arka planı için (isteğe bağlı)
+        dropdownMenuTheme: DropdownMenuThemeData(
+          textStyle: const TextStyle(fontSize: 13),
+        ),
       ),
       home: BlocProvider(
         create: (_) => SiteBloc()..add(LoadSites()),
