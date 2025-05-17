@@ -111,6 +111,9 @@ class PersonnelService {
         'salary': person.salary,
       }),
     );
+     print(response.statusCode);
+    print(response.body);
+
 
     return response.statusCode == 200 || response.statusCode == 201;
   }
