@@ -26,6 +26,20 @@ class SiteService {
     }
   }
 
+  static Future<bool> createSite(SiteModel site) async {
+    final response = await http.post(
+      Uri.parse('http://localhost:8080/api/sites'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'name': site.name,
+        'location': site.location,
+        'workerCount': site.workerCount,
+        'engineerCount': site.engineerCount,
+      }),
+    );
+
+    return response.statusCode == 200 || response.statusCode == 201;
+  }
 
 
 }

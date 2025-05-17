@@ -29,7 +29,21 @@ class _SiteListScreenState extends State<SiteListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Sites & Personnel')),
+      appBar: AppBar(
+        title: const Text('Sites & Personnel'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person_add),
+            tooltip: 'Yeni Personel Ekle',
+            onPressed: _showAddPersonnelDialog,
+          ),
+          IconButton(
+            icon: const Icon(Icons.add_location_alt),
+            tooltip: 'Yeni Şantiye Ekle',
+            onPressed: _showAddSiteDialog,
+          ),
+        ],
+      ),
       body: FutureBuilder<List<SiteModel>>(
         future: _futureSites,
         builder: (context, siteSnapshot) {
@@ -340,6 +354,110 @@ class _SiteListScreenState extends State<SiteListScreen> {
               }
             },
             child: Text('Kaydet'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAddPersonnelDialog() {
+    final nameController = TextEditingController();
+    final roleController = TextEditingController();
+    final positionController = TextEditingController();
+    final nationalityController = TextEditingController();
+    final visaStatusController = TextEditingController();
+    final salaryController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Yeni Personel Ekle'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(decoration: const InputDecoration(labelText: 'İsim'), controller: nameController),
+              TextField(decoration: const InputDecoration(labelText: 'Rol'), controller: roleController),
+              TextField(decoration: const InputDecoration(labelText: 'Pozisyon'), controller: positionController),
+              TextField(decoration: const InputDecoration(labelText: 'Uyruk'), controller: nationalityController),
+              TextField(decoration: const InputDecoration(labelText: 'Vize Durumu'), controller: visaStatusController),
+              TextField(decoration: const InputDecoration(labelText: 'Maaş'), controller: salaryController, keyboardType: TextInputType.number),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('İptal')),
+          ElevatedButton(
+            onPressed: () async {
+              final newPerson = PersonnelModel(
+                id: 0,
+                name: nameController.text.trim(),
+                role: roleController.text.trim(),
+                position: positionController.text.trim(),
+                nationality: nationalityController.text.trim(),
+                visaStatus: visaStatusController.text.trim(),
+                salary: double.tryParse(salaryController.text.trim()) ?? 0,
+                siteId: null,
+                status: null,
+              );
+              final success = await PersonnelService.createPersonnel(newPerson);
+              if (success) {
+                Navigator.pop(context);
+                final updatedFuture = PersonnelService.fetchAllPersonnel();
+                setState(() {
+                  _futurePersonnel = updatedFuture;
+                });
+              }
+            },
+            child: const Text('Ekle'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAddSiteDialog() {
+    final nameController = TextEditingController();
+    final locationController = TextEditingController();
+    final workerCountController = TextEditingController();
+    final engineerCountController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Yeni Şantiye Ekle'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(decoration: const InputDecoration(labelText: 'Şantiye Adı'), controller: nameController),
+              TextField(decoration: const InputDecoration(labelText: 'Lokasyon'), controller: locationController),
+              TextField(decoration: const InputDecoration(labelText: 'İşçi Sayısı'), controller: workerCountController, keyboardType: TextInputType.number),
+              TextField(decoration: const InputDecoration(labelText: 'Mühendis Sayısı'), controller: engineerCountController, keyboardType: TextInputType.number),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('İptal')),
+          ElevatedButton(
+            onPressed: () async {
+              final newSite = SiteModel(
+                id: 0,
+                name: nameController.text.trim(),
+                location: locationController.text.trim(),
+                workerCount: int.tryParse(workerCountController.text.trim()) ?? 0,
+                engineerCount: int.tryParse(engineerCountController.text.trim()) ?? 0,
+              );
+              final success = await SiteService.createSite(newSite);
+              if (success) {
+                Navigator.pop(context);
+                final updatedFuture = SiteService.fetchSites();
+                setState(() {
+                  _futureSites = updatedFuture;
+                });
+              }
+            },
+            child: const Text('Ekle'),
           ),
         ],
       ),

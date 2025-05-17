@@ -97,4 +97,22 @@ class PersonnelService {
     }
     return roleCounts;
   }
+
+  static Future<bool> createPersonnel(PersonnelModel person) async {
+    final response = await http.post(
+      Uri.parse('http://localhost:8080/api/personnel'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'name': person.name,
+        'role': person.role,
+        'position': person.position,
+        'nationality': person.nationality,
+        'visaStatus': person.visaStatus,
+        'salary': person.salary,
+      }),
+    );
+
+    return response.statusCode == 200 || response.statusCode == 201;
+  }
+
 }
