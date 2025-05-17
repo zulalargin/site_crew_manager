@@ -19,6 +19,8 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
   late Future<List<PersonnelModel>> personnelFuture;
 
   String? selectedRole;
+  final TextEditingController _searchController = TextEditingController();
+  String searchQuery = '';
 
   @override
   void initState() {
@@ -26,6 +28,24 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
     siteFuture = SiteService.fetchSiteById(widget.siteId);
     allSitesFuture = SiteService.fetchSites();
     personnelFuture = PersonnelService.fetchPersonnelBySite(widget.siteId);
+
+    _searchController.addListener(() {
+      setState(() {
+        searchQuery = _searchController.text.toLowerCase();
+      });
+    });
+  }
+
+  String emojiForRole(String role) {
+    final lower = role.toLowerCase();
+    if (lower.contains('worker')) return '👷';
+    if (lower.contains('engineer')) return '🧑‍💼';
+    if (lower.contains('hr')) return '📝';
+    if (lower.contains('security')) return '🛡️';
+    if (lower.contains('logistics')) return '🚚';
+    if (lower.contains('manager')) return '👨‍💼';
+    if (lower.contains('document')) return '📁';
+    return '👤';
   }
 
   @override
@@ -45,24 +65,7 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
               children: [
                 Text('🏗 ${currentSite.name}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                 Text('📍 ${currentSite.location}', style: const TextStyle(fontSize: 16)),
-                const SizedBox(height: 12),
-
-                FutureBuilder<List<PersonnelModel>>(
-                  future: personnelFuture,
-                  builder: (context, personnelSnapshot) {
-                    if (!personnelSnapshot.hasData) return const SizedBox.shrink();
-                    final personnelList = personnelSnapshot.data!;
-                    final workerCount = personnelList.where((p) => p.role == 'Worker').length;
-                    final engineerCount = personnelList.where((p) => p.role == 'Engineer').length;
-
-                    return Text(
-                      '👷 Workers: $workerCount   🧑‍💼 Engineers: $engineerCount',
-                      style: const TextStyle(fontSize: 16),
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
 
                 Expanded(
                   child: FutureBuilder<List<PersonnelModel>>(
@@ -72,9 +75,26 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
                       final allPersonnel = personnelSnapshot.data!;
                       final availableRoles = allPersonnel.map((p) => p.role).toSet().toList();
 
-                      final filteredPersonnel = selectedRole == null
-                          ? allPersonnel
-                          : allPersonnel.where((p) => p.role == selectedRole).toList();
+                      // ✅ Filtreleme ve sıralama
+                      List<PersonnelModel> filteredPersonnel = allPersonnel;
+
+                      if (selectedRole != null) {
+                        filteredPersonnel = filteredPersonnel
+                            .where((p) => p.role.toLowerCase() == selectedRole!.toLowerCase())
+                            .toList();
+                      }
+
+                      if (searchQuery.isNotEmpty) {
+                        final query = searchQuery.toLowerCase();
+                        filteredPersonnel = filteredPersonnel.where((p) {
+                          return p.name.toLowerCase().contains(query) ||
+                              (p.role?.toLowerCase().contains(query) ?? false) ||
+                              (p.position?.toLowerCase().contains(query) ?? false) ||
+                              (p.nationality?.toLowerCase().contains(query) ?? false);
+                        }).toList();
+                      }
+
+                      filteredPersonnel.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 
                       return FutureBuilder<List<SiteModel>>(
                         future: allSitesFuture,
@@ -85,7 +105,6 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
 
                           return Column(
                             children: [
-                              // 🔄 Scrollable filter with arrows
                               ScrollableRoleFilter(
                                 roles: availableRoles.map((role) {
                                   final count = allPersonnel.where((p) => p.role == role).length;
@@ -94,13 +113,21 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
                                 selectedRole: selectedRole,
                                 onRoleSelected: (role) => setState(() => selectedRole = role),
                               ),
+                              const SizedBox(height: 8),
 
+                              TextField(
+                                controller: _searchController,
+                                decoration: InputDecoration(
+                                  hintText: 'Search by name, role, nationality...',
+                                  prefixIcon: const Icon(Icons.search),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                              ),
                               const SizedBox(height: 12),
 
-                              // 👤 Person list
                               Expanded(
                                 child: filteredPersonnel.isEmpty
-                                    ? const Center(child: Text('No personnel found for selected role.'))
+                                    ? const Center(child: Text('No personnel found.'))
                                     : ListView.builder(
                                   itemCount: filteredPersonnel.length,
                                   itemBuilder: (context, index) {
@@ -113,10 +140,10 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Text('Role: ${p.role}'),
-                                          if (p.position != null) Text('Position: ${p.position}'),
-                                          if (p.nationality != null) Text('Nationality: ${p.nationality}'),
-                                          if (p.visaStatus != null) Text('Visa Status: ${p.visaStatus}'),
-                                          if (p.salary != null) Text('Salary: ${p.salary!.toStringAsFixed(2)}'),
+                                          Text('Position: ${p.position ?? "Unknown"}'),
+                                          Text('Nationality: ${p.nationality ?? "Unknown"}'),
+                                          Text('Visa Status: ${p.visaStatus ?? "Unknown"}'),
+                                          Text('Salary: ${p.salary?.toStringAsFixed(2) ?? "Unknown"}'),
                                         ],
                                       ),
                                       trailing: SizedBox(
@@ -126,16 +153,14 @@ class _SiteDetailScreenState extends State<SiteDetailScreen> {
                                           value: currentSite,
                                           underline: const SizedBox(),
                                           items: [
-                                            DropdownMenuItem<SiteModel>(
+                                            DropdownMenuItem(
                                               value: currentSite,
                                               child: Text('${currentSite.name} (Current)', style: const TextStyle(fontWeight: FontWeight.bold)),
                                             ),
-                                            ...otherSites.map((s) {
-                                              return DropdownMenuItem<SiteModel>(
-                                                value: s,
-                                                child: Text(s.name),
-                                              );
-                                            }).toList(),
+                                            ...otherSites.map((s) => DropdownMenuItem(
+                                              value: s,
+                                              child: Text(s.name),
+                                            )),
                                           ],
                                           onChanged: (newSite) async {
                                             if (newSite?.id != currentSite.id) {

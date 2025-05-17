@@ -14,6 +14,8 @@ class _SiteListScreenState extends State<SiteListScreen> {
   late Future<List<SiteModel>> _futureSites;
   late Future<List<PersonnelModel>> _futurePersonnel;
   String searchTerm = '';
+  String? selectedLocation;
+  String personnelFilter = 'All';
 
   @override
   void initState() {
@@ -37,9 +39,25 @@ class _SiteListScreenState extends State<SiteListScreen> {
             builder: (context, personnelSnapshot) {
               if (!personnelSnapshot.hasData) return const Center(child: CircularProgressIndicator());
               final personnelList = personnelSnapshot.data!;
-              final filteredPersonnel = personnelList
-                  .where((p) => p.name.toLowerCase().contains(searchTerm.toLowerCase()))
-                  .toList();
+
+              final sitesByLocation = <String, List<SiteModel>>{};
+              for (var site in sites) {
+                sitesByLocation.putIfAbsent(site.location, () => []).add(site);
+              }
+
+              final filteredEntries = selectedLocation == null
+                  ? sitesByLocation.entries
+                  : sitesByLocation.entries.where((e) => e.key == selectedLocation);
+
+              final filteredPersonnel = personnelList.where((p) {
+                final matchesSearch = p.name.toLowerCase().contains(searchTerm.toLowerCase());
+                final matchesFilter = switch (personnelFilter) {
+                  'Boşta' => p.siteId == null,
+                  'İzinde' => p.role.toLowerCase().contains('leave') || (p.position?.toLowerCase().contains('leave') ?? false),
+                  _ => true,
+                };
+                return matchesSearch && matchesFilter;
+              }).toList();
 
               return Row(
                 children: [
@@ -72,6 +90,20 @@ class _SiteListScreenState extends State<SiteListScreen> {
                             ),
                           ),
                         ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Wrap(
+                            spacing: 8,
+                            children: [
+                              'All', 'Boşta', 'İzinde'
+                            ].map((label) => ChoiceChip(
+                              label: Text(label),
+                              selected: personnelFilter == label,
+                              onSelected: (_) => setState(() => personnelFilter = label),
+                            )).toList(),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
                         Expanded(
                           child: ListView.builder(
                             itemCount: filteredPersonnel.length,
@@ -85,7 +117,7 @@ class _SiteListScreenState extends State<SiteListScreen> {
                                 assignedSite = null;
                               }
 
-                               return ListTile(
+                              return ListTile(
                                 tileColor: person.siteId == null ? Colors.green.withOpacity(0.15) : null,
                                 title: Text(
                                   person.name,
@@ -135,7 +167,6 @@ class _SiteListScreenState extends State<SiteListScreen> {
                                   ),
                                 ),
                               );
-
                             },
                           ),
                         ),
@@ -145,44 +176,63 @@ class _SiteListScreenState extends State<SiteListScreen> {
 
                   const VerticalDivider(),
 
-                  // Right panel - Sites
+                  // Right panel - Sites grouped by location
                   Expanded(
                     flex: 2,
-                    child: ListView.builder(
-                      itemCount: sites.length,
-                      itemBuilder: (context, index) {
-                        final site = sites[index];
-                        final assignedPersonnel = personnelList.where((p) => p.siteId == site.id).toList();
-                        final roleCounts = PersonnelService.countByRole(assignedPersonnel);
-
-                        return Card(
-                          margin: const EdgeInsets.all(8),
-                          child: ListTile(
-                            title: Text(site.name),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('📍 ${site.location}'),
-                                const SizedBox(height: 4),
-                                ...roleCounts.entries.map((entry) => Text('🔹 ${entry.key}: ${entry.value}')),
-                              ],
-                            ),
-                            onTap: () async {
-                              await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => SiteDetailScreen(siteId: site.id),
-                                ),
-                              );
-                              // Detaydan dönünce yenile
-                              setState(() {
-                                _futureSites = SiteService.fetchSites();
-                                _futurePersonnel = PersonnelService.fetchAllPersonnel();
-                              });
-                            },
+                    child: ListView(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          child: DropdownButton<String>(
+                            value: selectedLocation,
+                            hint: const Text('📍 Select location'),
+                            isExpanded: true,
+                            items: [
+                              const DropdownMenuItem(value: null, child: Text('All Locations')),
+                              ...sitesByLocation.keys.map((loc) => DropdownMenuItem(value: loc, child: Text(loc))),
+                            ],
+                            onChanged: (value) => setState(() => selectedLocation = value),
                           ),
-                        );
-                      },
+                        ),
+                        ...filteredEntries.map((entry) {
+                          final location = entry.key;
+                          final locationSites = entry.value;
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                child: Text(
+                                  '📍 $location',
+                                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              ...locationSites.map((site) {
+                                final count = personnelList.where((p) => p.siteId == site.id).length;
+
+                                return ListTile(
+                                  title: Text(site.name),
+                                  subtitle: Text('👥 $count personnel'),
+                                  onTap: () async {
+                                    await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => SiteDetailScreen(siteId: site.id),
+                                      ),
+                                    );
+                                    setState(() {
+                                      _futureSites = SiteService.fetchSites();
+                                      _futurePersonnel = PersonnelService.fetchAllPersonnel();
+                                    });
+                                  },
+                                );
+                              }),
+                              const Divider(thickness: 1),
+                            ],
+                          );
+                        }).toList(),
+                      ],
                     ),
                   ),
                 ],
