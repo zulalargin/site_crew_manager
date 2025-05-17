@@ -30,6 +30,21 @@ class PersonnelService {
     return response.statusCode == 200;
   }
 
+  static Future<bool> assignSiteAndStatus(int id, int? siteId, String? status) async {
+    final url = Uri.parse('http://localhost:8080/api/personnel/$id/assign');
+
+    final response = await http.put(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'siteId': siteId,
+        'status': status,
+      }),
+    );
+
+    return response.statusCode == 200;
+  }
+
 
 
   static Future<List<PersonnelModel>> fetchPersonnelBySite(int siteId) async {

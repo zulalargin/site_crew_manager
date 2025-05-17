@@ -7,6 +7,7 @@ class PersonnelModel {
   final String? nationality;
   final String? visaStatus;
   final double? salary;
+  final String? status; // ✅ Yeni alan
 
   PersonnelModel({
     required this.id,
@@ -17,6 +18,7 @@ class PersonnelModel {
     this.nationality,
     this.visaStatus,
     this.salary,
+    this.status,
   });
 
   factory PersonnelModel.fromJson(Map<String, dynamic> json) {
@@ -29,6 +31,7 @@ class PersonnelModel {
       nationality: json['nationality'],
       visaStatus: json['visaStatus'],
       salary: json['salary'] != null ? (json['salary'] as num).toDouble() : null,
+      status: json['status'], // ✅ JSON'dan okuma
     );
   }
 
@@ -42,6 +45,7 @@ class PersonnelModel {
       'nationality': nationality,
       'visaStatus': visaStatus,
       'salary': salary,
+      'status': status, // ✅ JSON'a yazma
     };
   }
 }

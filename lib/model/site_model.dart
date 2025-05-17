@@ -23,6 +23,14 @@ class SiteModel {
     );
   }
 
+  static final SiteModel leave = SiteModel(
+    id: -1,
+    name: 'İzinde',
+    location: '',
+    workerCount: 0,
+    engineerCount: 0,
+  );
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) || (other is SiteModel && id == other.id);
