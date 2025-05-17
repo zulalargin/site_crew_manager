@@ -16,6 +16,24 @@ class PersonnelService {
       throw Exception("Failed to load personnel");
     }
   }
+  static Future<bool> updatePersonnelInfo(PersonnelModel person) async {
+    final response = await http.put(
+      Uri.parse('http://localhost:8080/api/personnel/${person.id}'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'name': person.name,
+        'role': person.role,
+        'position': person.position,
+        'nationality': person.nationality,
+        'visaStatus': person.visaStatus,
+        'salary': person.salary,
+        'siteId': person.siteId,
+        'status': person.status,
+      }),
+    );
+
+    return response.statusCode == 200;
+  }
 
   static Future<bool> assignSite(int personId, int? siteId) async {
     final response = await http.put(

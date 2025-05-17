@@ -1,3 +1,4 @@
+// 🔄 ESKİ YAPI GERİ YÜKLENDİ - Search, filtreler, layout, detay ekranı, dropdown, renklendirme her şey dahil
 import 'package:flutter/material.dart';
 
 import '../model/personel_model.dart';
@@ -50,24 +51,17 @@ class _SiteListScreenState extends State<SiteListScreen> {
 
               final filteredEntries = selectedLocation == null
                   ? sitesByLocation.entries
-                  : sitesByLocation.entries
-                      .where((e) => e.key == selectedLocation);
+                  : sitesByLocation.entries.where((e) => e.key == selectedLocation);
 
               final filteredPersonnel = allPersonnel.where((p) {
-                final matchesSearch =
-                    p.name.toLowerCase().contains(searchTerm.toLowerCase());
+                final matchesSearch = p.name.toLowerCase().contains(searchTerm.toLowerCase());
                 final matchesFilter = switch (personnelFilter) {
-                  'Boşta' =>
-                    p.siteId == null && (p.status?.toLowerCase() != 'on_leave'),
+                  'Boşta' => p.siteId == null && (p.status?.toLowerCase() != 'on_leave'),
                   'İzinde' => p.status?.toLowerCase() == 'on_leave',
                   _ => true,
                 };
                 return matchesSearch && matchesFilter;
               }).toList();
-
-
-
-
 
               return Column(
                 children: [
@@ -96,26 +90,22 @@ class _SiteListScreenState extends State<SiteListScreen> {
                                     decoration: const InputDecoration(
                                       hintText: '🔍 Search personnel...',
                                       border: InputBorder.none,
-                                      contentPadding: EdgeInsets.symmetric(
-                                          horizontal: 16, vertical: 12),
+                                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                     ),
-                                    onChanged: (value) =>
-                                        setState(() => searchTerm = value),
+                                    onChanged: (value) => setState(() => searchTerm = value),
                                   ),
                                 ),
                               ),
                               Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 12),
+                                padding: const EdgeInsets.symmetric(horizontal: 12),
                                 child: Wrap(
                                   spacing: 8,
                                   children: ['All', 'Boşta', 'İzinde']
                                       .map((label) => ChoiceChip(
-                                            label: Text(label),
-                                            selected: personnelFilter == label,
-                                            onSelected: (_) => setState(
-                                                () => personnelFilter = label),
-                                          ))
+                                    label: Text(label),
+                                    selected: personnelFilter == label,
+                                    onSelected: (_) => setState(() => personnelFilter = label),
+                                  ))
                                       .toList(),
                                 ),
                               ),
@@ -125,18 +115,15 @@ class _SiteListScreenState extends State<SiteListScreen> {
                                   itemCount: filteredPersonnel.length,
                                   itemBuilder: (context, index) {
                                     final person = filteredPersonnel[index];
-                                    final isOnLeave =
-                                        person.status?.toLowerCase() ==
-                                            'on_leave';
-                                    final isUnassigned =
-                                        person.siteId == null && !isOnLeave;
+                                    final isOnLeave = person.status?.toLowerCase() == 'on_leave';
+                                    final isUnassigned = person.siteId == null && !isOnLeave;
 
                                     SiteModel? assignedSite;
                                     if (isOnLeave) {
                                       assignedSite = SiteModel.leave;
                                     } else {
                                       assignedSite = sites.firstWhere(
-                                        (s) => s.id == person.siteId,
+                                            (s) => s.id == person.siteId,
                                         orElse: () => SiteModel(
                                           id: -99,
                                           name: 'Tanımsız',
@@ -163,42 +150,29 @@ class _SiteListScreenState extends State<SiteListScreen> {
                                     }
 
                                     return ListTile(
+                                      onTap: () => _showEditPersonnelDialog(person, allPersonnel),
                                       tileColor: tileColor,
                                       title: Text(
                                         person.name,
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: textColor,
-                                          fontWeight: fontWeight,
-                                        ),
+                                        style: TextStyle(fontSize: 14, color: textColor, fontWeight: fontWeight),
                                       ),
                                       trailing: SizedBox(
                                         width: 140,
                                         child: DropdownButtonHideUnderline(
                                           child: DropdownButton<SiteModel?>(
                                             isExpanded: true,
-                                            value: isOnLeave
-                                                ? SiteModel.leave
-                                                : (assignedSite.id < 0 ? null : assignedSite),
+                                            value: isOnLeave ? SiteModel.leave : (assignedSite.id < 0 ? null : assignedSite),
                                             hint: const Text('Assign', style: TextStyle(fontSize: 13)),
                                             iconEnabledColor: Colors.black,
                                             dropdownColor: Colors.white,
                                             style: const TextStyle(fontSize: 13, color: Colors.black),
                                             items: [
-                                              DropdownMenuItem<SiteModel?>(
-                                                value: null,
-                                                child: _noHighlightText('Boşta'),
-                                              ),
-                                              DropdownMenuItem<SiteModel?>(
-                                                value: SiteModel.leave,
-                                                child: _noHighlightText('İzinde'),
-                                              ),
-                                              ...sites.map((site) {
-                                                return DropdownMenuItem<SiteModel?>(
-                                                  value: site,
-                                                  child: _noHighlightText(site.name),
-                                                );
-                                              }).toList(),
+                                              DropdownMenuItem<SiteModel?>(value: null, child: _noHighlightText('Boşta')),
+                                              DropdownMenuItem<SiteModel?>(value: SiteModel.leave, child: _noHighlightText('İzinde')),
+                                              ...sites.map((site) => DropdownMenuItem<SiteModel?>(
+                                                value: site,
+                                                child: _noHighlightText(site.name),
+                                              )),
                                             ],
                                             onChanged: (selectedSite) async {
                                               String? newStatus;
@@ -251,22 +225,16 @@ class _SiteListScreenState extends State<SiteListScreen> {
                           child: ListView(
                             children: [
                               Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 8),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                 child: DropdownButton<String>(
                                   value: selectedLocation,
                                   hint: const Text('📍 Select location'),
                                   isExpanded: true,
                                   items: [
-                                    const DropdownMenuItem(
-                                        value: null,
-                                        child: Text('All Locations')),
-                                    ...sitesByLocation.keys.map((loc) =>
-                                        DropdownMenuItem(
-                                            value: loc, child: Text(loc))),
+                                    const DropdownMenuItem(value: null, child: Text('All Locations')),
+                                    ...sitesByLocation.keys.map((loc) => DropdownMenuItem(value: loc, child: Text(loc))),
                                   ],
-                                  onChanged: (value) =>
-                                      setState(() => selectedLocation = value),
+                                  onChanged: (value) => setState(() => selectedLocation = value),
                                 ),
                               ),
                               ...filteredEntries.map((entry) {
@@ -277,19 +245,11 @@ class _SiteListScreenState extends State<SiteListScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 16, vertical: 10),
-                                      child: Text(
-                                        '📍 $location',
-                                        style: const TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold),
-                                      ),
+                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                      child: Text('📍 $location', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                                     ),
                                     ...locationSites.map((site) {
-                                      final count = allPersonnel
-                                          .where((p) => p.siteId == site.id)
-                                          .length;
+                                      final count = allPersonnel.where((p) => p.siteId == site.id).length;
 
                                       return ListTile(
                                         title: Text(site.name),
@@ -298,16 +258,12 @@ class _SiteListScreenState extends State<SiteListScreen> {
                                           await Navigator.push(
                                             context,
                                             MaterialPageRoute(
-                                              builder: (context) =>
-                                                  SiteDetailScreen(
-                                                      siteId: site.id),
+                                              builder: (context) => SiteDetailScreen(siteId: site.id),
                                             ),
                                           );
                                           setState(() {
-                                            _futureSites =
-                                                SiteService.fetchSites();
-                                            _futurePersonnel = PersonnelService
-                                                .fetchAllPersonnel();
+                                            _futureSites = SiteService.fetchSites();
+                                            _futurePersonnel = PersonnelService.fetchAllPersonnel();
                                           });
                                         },
                                       );
@@ -329,7 +285,68 @@ class _SiteListScreenState extends State<SiteListScreen> {
         },
       ),
     );
-  }Widget _noHighlightText(String text) {
+  }
+
+  void _showEditPersonnelDialog(PersonnelModel person, List<PersonnelModel> allPersonnel) {
+    final nameController = TextEditingController(text: person.name);
+    final roleController = TextEditingController(text: person.role);
+    final positionController = TextEditingController(text: person.position ?? '');
+    final nationalityController = TextEditingController(text: person.nationality ?? '');
+    final visaStatusController = TextEditingController(text: person.visaStatus ?? '');
+    final salaryController = TextEditingController(text: person.salary?.toString() ?? '');
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('${person.name} - Düzenle'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(decoration: InputDecoration(labelText: 'İsim'), controller: nameController),
+              TextField(decoration: InputDecoration(labelText: 'Rol'), controller: roleController),
+              TextField(decoration: InputDecoration(labelText: 'Pozisyon'), controller: positionController),
+              TextField(decoration: InputDecoration(labelText: 'Uyruk'), controller: nationalityController),
+              TextField(decoration: InputDecoration(labelText: 'Vize Durumu'), controller: visaStatusController),
+              TextField(decoration: InputDecoration(labelText: 'Maaş'), controller: salaryController, keyboardType: TextInputType.number),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('İptal')),
+          ElevatedButton(
+            onPressed: () async {
+              final updated = PersonnelModel(
+                id: person.id,
+                name: nameController.text.trim(),
+                role: roleController.text.trim(),
+                position: positionController.text.trim(),
+                nationality: nationalityController.text.trim(),
+                visaStatus: visaStatusController.text.trim(),
+                salary: double.tryParse(salaryController.text.trim()),
+                siteId: person.siteId,
+                status: person.status,
+              );
+              final success = await PersonnelService.updatePersonnelInfo(updated);
+              if (success) {
+                Navigator.pop(context);
+                final updatedFuture = PersonnelService.fetchAllPersonnel();
+                setState(() {
+                  _futurePersonnel = updatedFuture;
+                });
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${person.name} güncellendi')));
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Güncelleme başarısız')));
+              }
+            },
+            child: Text('Kaydet'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _noHighlightText(String text) {
     return Theme(
       data: Theme.of(context).copyWith(
         splashColor: Colors.transparent,
@@ -339,7 +356,6 @@ class _SiteListScreenState extends State<SiteListScreen> {
       child: Text(text, style: const TextStyle(fontSize: 13)),
     );
   }
-
 }
 
 class StatCard extends StatelessWidget {
@@ -372,9 +388,7 @@ class StatCard extends StatelessWidget {
         children: [
           Text(emoji, style: const TextStyle(fontSize: 20)),
           const SizedBox(height: 6),
-          Text('$count',
-              style: TextStyle(
-                  fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+          Text('$count', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
           const SizedBox(height: 4),
           Text(label, style: TextStyle(fontSize: 12, color: color)),
         ],
@@ -383,7 +397,6 @@ class StatCard extends StatelessWidget {
   }
 }
 
-// Add this to your SiteModel.dart
 extension SiteModelHelpers on SiteModel {
   static final SiteModel leave = SiteModel(
     id: -1,
